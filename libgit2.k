@@ -373,10 +373,13 @@ include "lib:gluelink";
 @Native GitOdbObject GitOdb.readPrefix(GitOid short_id, int len);
 
 /* Write an object directly into the ODB */
-@Native void GitOdb.write(Bytes data, int type);
+@Native GitOid GitOdb.write(Bytes data, int type);
 
 /* ------------------------------------------------------------------------ */
 // [oid]
+
+/* fields */
+@Native String GitOid.getId();
 
 /* Format a git_oid into a newly allocated c-string. */
 @Native String GitOid.allocfmt();
@@ -622,6 +625,10 @@ include "lib:gluelink";
 
 /* ------------------------------------------------------------------------ */
 // [signature]
+
+/* fields */
+@Native String GitSignature.getName();
+@Native String GitSignature.getEmail();
 
 /* Create a copy of an existing signature. */
 @Native GitSignature GitSignature.dup();

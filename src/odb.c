@@ -180,13 +180,14 @@ KMETHOD GitOdb_exists(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native @Static GitOid GitOdb.hash(Bytes data, int type);
 KMETHOD GitOdb_hash(CTX ctx, ksfp_t *sfp _RIX)
 {
-	git_oid *id;
+	git_oid *id = (git_oid *)KNH_MALLOC(ctx, sizeof(git_oid));
 	const void *data = BA_totext(sfp[1].ba);
 	size_t len = BA_size(sfp[1].ba);
 	git_otype type = Int_to(git_otype, sfp[2]);
 	int error = git_odb_hash(id, data, len, type);
 	if (error < GIT_SUCCESS) {
 		TRACE_ERROR(ctx, "git_odb_hash", error);
+		KNH_FREE(ctx, id, sizeof(git_oid));
 		RETURN_(KNH_NULL);
 	}
 	RETURN_(new_ReturnRawPtr(ctx, sfp, id));
@@ -199,12 +200,13 @@ KMETHOD GitOdb_hash(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native @Static GitOid GitOdb.hashfile(Path path, int type);
 KMETHOD GitOdb_hashfile(CTX ctx, ksfp_t *sfp _RIX)
 {
-	git_oid *out;
+	git_oid *out = (git_oid *)KNH_MALLOC(ctx, sizeof(git_oid));
 	const char *path = sfp[1].pth->ospath;
 	git_otype type = RawPtr_to(git_otype, sfp[2]);
 	int error = git_odb_hashfile(out, path, type);
 	if (error < GIT_SUCCESS) {
 		TRACE_ERROR(ctx, "git_odb_hashfile", error);
+		KNH_FREE(ctx, out, sizeof(git_oid));
 		RETURN_(KNH_NULL);
 	}
 	RETURN_(new_ReturnRawPtr(ctx, sfp, out));
@@ -236,6 +238,9 @@ KMETHOD GitOdbObject_close(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitOdbObject_data(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_odb_object *object = RawPtr_to(git_odb_object *, sfp[0]);
+	if (object == NULL) {
+		RETURN_(KNH_TNULL(Bytes));
+	}
 	const void *data = git_odb_object_data(object);
 	size_t size = git_odb_object_size(object);
 	kBytes *ba = new_Bytes(ctx, "git_odb_object_data", size);
@@ -256,14 +261,22 @@ KMETHOD GitOdbObject_id(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native int GitOdbObject.size();
 KMETHOD GitOdbObject_size(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURNi_(git_odb_object_size(RawPtr_to(git_odb_object *, sfp[0])));
+	git_odb_object *object = RawPtr_to(git_odb_object *, sfp[0]);
+	if (object == NULL) {
+		RETURNi_(0);
+	}
+	RETURNi_(git_odb_object_size(object));
 }
 
 /* Return the type of an ODB object */
 //## @Native int GitOdbObject.type();
 KMETHOD GitOdbObject_type(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURNi_(git_odb_object_type(RawPtr_to(git_odb_object *, sfp[0])));
+	git_odb_object *object = RawPtr_to(git_odb_object *, sfp[0]);
+	if (object == NULL) {
+		RETURNi_(-1);
+	}
+	RETURNi_(git_odb_object_type(object));
 }
 
 /* Create a new object database and automatically add the two default backends:
@@ -332,18 +345,18 @@ KMETHOD GitOdb_read(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native Tuple<int,int> GitOdb.readHeader(GitOid id);
 KMETHOD GitOdb_readHeader(CTX ctx, ksfp_t *sfp _RIX)
 {
-	size_t *len_p;
-	git_otype *type_p;
+	size_t len_p;
+	git_otype type_p;
 	git_odb *db = RawPtr_to(git_odb *, sfp[0]);
 	const git_oid *id = RawPtr_to(const git_oid *, sfp[1]);
-	int error = git_odb_read_header(len_p, type_p, db, id);
+	int error = git_odb_read_header(&len_p, &type_p, db, id);
 	if (error < GIT_SUCCESS) {
 		TRACE_ERROR(ctx, "git_odb_read_header", error);
 		RETURN_(KNH_NULL);
 	}
 	kTuple *t = new_ReturnObject(ctx, sfp);
-	t->ifields[0] = *len_p;
-	t->ifields[1] = *type_p;
+	t->ifields[0] = len_p;
+	t->ifields[1] = type_p;
 	RETURN_(t);
 }
 
@@ -364,10 +377,10 @@ KMETHOD GitOdb_readPrefix(CTX ctx, ksfp_t *sfp _RIX)
 }
 
 /* Write an object directly into the ODB */
-//## @Native void GitOdb.write(Bytes data, int type);
+//## @Native GitOid GitOdb.write(Bytes data, int type);
 KMETHOD GitOdb_write(CTX ctx, ksfp_t *sfp _RIX)
 {
-	git_oid *oid;
+	git_oid *oid = (git_oid *)KNH_MALLOC(ctx, sizeof(git_oid));
 	git_odb *odb = RawPtr_to(git_odb *, sfp[0]);
 	const void *data = BA_totext(sfp[1].ba);
 	size_t len = BA_size(sfp[1].ba);
@@ -375,8 +388,10 @@ KMETHOD GitOdb_write(CTX ctx, ksfp_t *sfp _RIX)
 	int error = git_odb_write(oid, odb, data, len, type);
 	if (error < GIT_SUCCESS) {
 		TRACE_ERROR(ctx, "git_odb_write", error);
+		KNH_FREE(ctx, oid, sizeof(git_oid));
+		RETURN_(KNH_NULL);
 	}
-	RETURNvoid_();
+	RETURN_(new_ReturnRawPtr(ctx, sfp, oid));
 }
 
 /* ------------------------------------------------------------------------ */

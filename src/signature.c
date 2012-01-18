@@ -60,6 +60,21 @@ DEFAPI(void) defGitSignature(CTX ctx, kclass_t cid, kclassdef_t *cdef)
 
 /* ------------------------------------------------------------------------ */
 
+/* fields */
+//## @Native String GitSignature.getName();
+KMETHOD GitSignature_getName(CTX ctx, ksfp_t *sfp _RIX)
+{
+	const git_signature *sig = RawPtr_to(const git_signature *, sfp[0]);
+	RETURN_(new_String(ctx, sig->name));
+}
+
+//## @Native String GitSignature.getEmail();
+KMETHOD GitSignature_getEmail(CTX ctx, ksfp_t *sfp _RIX)
+{
+	const git_signature *sig = RawPtr_to(const git_signature *, sfp[0]);
+	RETURN_(new_String(ctx, sig->email));
+}
+
 /* Create a copy of an existing signature. */
 //## @Native GitSignature GitSignature.dup();
 KMETHOD GitSignature_dup(CTX ctx, ksfp_t *sfp _RIX)

@@ -89,6 +89,16 @@ DEFAPI(void) defGitOidShorten(CTX ctx, kclass_t cid, kclassdef_t *cdef)
 
 /* ------------------------------------------------------------------------ */
 
+/* fields */
+//## @Native String GitOid.getId();
+KMETHOD GitOid_getId(CTX ctx, ksfp_t *sfp _RIX)
+{
+	const git_oid *oid = RawPtr_to(const git_oid *, sfp[0]);
+	char out[GIT_OID_HEXSZ + 2] = {0};
+	char *str = git_oid_to_string(out, GIT_OID_HEXSZ + 1, oid);
+	RETURN_(new_String(ctx, str));
+}
+
 /* Format a git_oid into a newly allocated c-string. */
 //## @Native String GitOid.allocfmt();
 KMETHOD GitOid_allocfmt(CTX ctx, ksfp_t *sfp _RIX)
