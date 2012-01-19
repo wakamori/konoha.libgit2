@@ -118,6 +118,9 @@ KMETHOD GitTreeEntry_byIndex(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_tree *tree = RawPtr_to(git_tree *, sfp[1]);
 	unsigned int idx = Int_to(unsigned int, sfp[2]);
+	if (tree == NULL) {
+		RETURN_(KNH_NULL);
+	}
 	const git_tree_entry *entry = git_tree_entry_byindex(tree, idx);
 	if (entry == NULL) {
 		KNH_NTRACE2(ctx, "git_tree_entry_byindex", K_NOTICE, KNH_LDATA(
@@ -156,6 +159,9 @@ KMETHOD GitTreeEntry_id(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitTreeEntry_name(CTX ctx, ksfp_t *sfp _RIX)
 {
 	const git_tree_entry *entry = RawPtr_to(const git_tree_entry *, sfp[0]);
+	if (entry == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	RETURN_(new_String(ctx, git_tree_entry_name(entry)));
 }
 
@@ -172,6 +178,9 @@ KMETHOD GitTreeEntry_type(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitTree_entryCount(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_tree *tree = RawPtr_to(git_tree *, sfp[0]);
+	if (tree == NULL) {
+		RETURNi_(0);
+	}
 	RETURNi_(git_tree_entrycount(tree));
 }
 

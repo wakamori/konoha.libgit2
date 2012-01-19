@@ -46,6 +46,7 @@ static void kGitSignature_init(CTX ctx, kRawPtr *po)
 static void kGitSignature_free(CTX ctx, kRawPtr *po)
 {
 	if (po->rawptr != NULL) {
+		fprintf(stderr, "git_signature_free(%p)\n", po->rawptr);
 		git_signature_free((git_signature *)po->rawptr);
 		po->rawptr = NULL;
 	}
@@ -65,6 +66,9 @@ DEFAPI(void) defGitSignature(CTX ctx, kclass_t cid, kclassdef_t *cdef)
 KMETHOD GitSignature_getName(CTX ctx, ksfp_t *sfp _RIX)
 {
 	const git_signature *sig = RawPtr_to(const git_signature *, sfp[0]);
+	if (sig == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	RETURN_(new_String(ctx, sig->name));
 }
 
@@ -72,6 +76,9 @@ KMETHOD GitSignature_getName(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitSignature_getEmail(CTX ctx, ksfp_t *sfp _RIX)
 {
 	const git_signature *sig = RawPtr_to(const git_signature *, sfp[0]);
+	if (sig == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	RETURN_(new_String(ctx, sig->email));
 }
 

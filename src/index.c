@@ -47,6 +47,7 @@ static void kGitIndex_init(CTX ctx, kRawPtr *po)
 static void kGitIndex_free(CTX ctx, kRawPtr *po)
 {
 	if (po->rawptr != NULL) {
+		fprintf(stderr, "git_index_free(%p)\n", po->rawptr);
 		git_index_free((git_index *)po->rawptr);
 		po->rawptr = NULL;
 	}
@@ -67,7 +68,8 @@ static void kGitIndexEntry_init(CTX ctx, kRawPtr *po)
 static void kGitIndexEntry_free(CTX ctx, kRawPtr *po)
 {
 	if (po->rawptr != NULL) {
-		KNH_FREE(ctx, po->rawptr, sizeof(git_index_entry));
+		/* do nothing */
+		//KNH_FREE(ctx, po->rawptr, sizeof(git_index_entry));
 		po->rawptr = NULL;
 	}
 }
@@ -100,6 +102,37 @@ DEFAPI(void) defGitIndexEntryUnmerged(CTX ctx, kclass_t cid, kclassdef_t *cdef)
 }
 
 /* ------------------------------------------------------------------------ */
+
+/* fields */
+//## @Native String GitIndexEntry.getPath();
+KMETHOD GitIndexEntry_getPath(CTX ctx, ksfp_t *sfp _RIX)
+{
+	git_index_entry *entry = RawPtr_to(git_index_entry *, sfp[0]);
+	if (index == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
+	RETURN_(new_String(ctx, entry->path));
+}
+
+//## @Native int GitIndexEntry.getMtime();
+KMETHOD GitIndexEntry_getMtime(CTX ctx, ksfp_t *sfp _RIX)
+{
+	git_index_entry *entry = RawPtr_to(git_index_entry *, sfp[0]);
+	if (index == NULL) {
+		RETURNi_(-1);
+	}
+	RETURNi_(entry->mtime.seconds);
+}
+
+//## @Native int GitIndexEntry.getFileSize();
+KMETHOD GitIndexEntry_getFileSize(CTX ctx, ksfp_t *sfp _RIX)
+{
+	git_index_entry *entry = RawPtr_to(git_index_entry *, sfp[0]);
+	if (index == NULL) {
+		RETURNi_(-1);
+	}
+	RETURNi_(entry->file_size);
+}
 
 /* Add or update an index entry from a file in disk */
 //## @Native void GitIndex.add(Path path, int stage);

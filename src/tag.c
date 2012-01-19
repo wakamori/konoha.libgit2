@@ -220,6 +220,9 @@ KMETHOD GitTag_lookupPrefix(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitTag_message(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_tag *tag = RawPtr_to(git_tag *, sfp[0]);
+	if (tag == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	RETURN_(new_String(ctx, git_tag_message(tag)));
 }
 
@@ -228,6 +231,9 @@ KMETHOD GitTag_message(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitTag_name(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_tag *tag = RawPtr_to(git_tag *, sfp[0]);
+	if (tag == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	RETURN_(new_String(ctx, git_tag_name(tag)));
 }
 
@@ -246,6 +252,9 @@ KMETHOD GitTag_target(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_object *target;
 	git_tag *tag = RawPtr_to(git_tag *, sfp[0]);
+	if (tag == NULL) {
+		RETURN_(KNH_NULL);
+	}
 	int error = git_tag_target(&target, tag);
 	if (error < GIT_SUCCESS) {
 		TRACE_ERROR(ctx, "git_tag_target", error);
@@ -268,6 +277,9 @@ KMETHOD GitTag_targetOid(CTX ctx, ksfp_t *sfp _RIX)
 KMETHOD GitTag_type(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_tag *tag = RawPtr_to(git_tag *, sfp[0]);
+	if (tag == NULL) {
+		RETURNi_(GIT_OBJ_BAD);
+	}
 	RETURNi_(git_tag_type(tag));
 }
 

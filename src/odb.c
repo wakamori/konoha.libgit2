@@ -274,7 +274,7 @@ KMETHOD GitOdbObject_type(CTX ctx, ksfp_t *sfp _RIX)
 {
 	git_odb_object *object = RawPtr_to(git_odb_object *, sfp[0]);
 	if (object == NULL) {
-		RETURNi_(-1);
+		RETURNi_(GIT_OBJ_BAD);
 	}
 	RETURNi_(git_odb_object_type(object));
 }

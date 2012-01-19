@@ -126,6 +126,9 @@ KMETHOD GitOid_fmt(CTX ctx, ksfp_t *sfp _RIX)
 {
 	char str[GIT_OID_HEXSZ + 1] = {0};
 	const git_oid *oid = RawPtr_to(const git_oid *, sfp[0]);
+	if (oid == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
 	git_oid_fmt(str, oid);
 	RETURN_(new_String(ctx, str));
 }

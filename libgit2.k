@@ -107,7 +107,7 @@ include "lib:gluelink";
 @Native @Static GitOid GitCommit.create(GitRepository repo, String update_ref, GitSignature author, GitSignature committer, String message_encoding, String message, GitTree tree, Array<GitCommit> parents);
 
 /* Create a new commit in the repository using a variable argument list. */
-@Native @Static GitOid GitCommit.createV(GitRepository repo, String update_ref, GitSignature author, GitSignature committer, String message_encoding, String message, GitTree tree, ...);
+//@Native @Static GitOid GitCommit.createV(GitRepository repo, String update_ref, GitSignature author, GitSignature committer, String message_encoding, String message, GitTree tree, ...);
 
 /* Get the id of a commit. */
 @Native GitOid GitCommit.id();
@@ -202,6 +202,11 @@ include "lib:gluelink";
 
 /* ------------------------------------------------------------------------ */
 // [index]
+
+/* fields */
+@Native String GitIndexEntry.getPath();
+@Native int GitIndexEntry.getMtime();
+@Native int GitIndexEntry.getFileSize();
 
 /* Add or update an index entry from a file in disk */
 @Native void GitIndex.add(Path path, int stage);

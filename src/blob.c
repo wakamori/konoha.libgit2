@@ -156,7 +156,11 @@ KMETHOD GitBlob_rawContent(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native int GitBlob.rawSize();
 KMETHOD GitBlob_rawSize(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURNi_(git_blob_rawsize(RawPtr_to(git_blob *, sfp[0])));
+	git_blob *blob = RawPtr_to(git_blob *, sfp[0]);
+	if (blob == NULL) {
+		RETURNi_(0);
+	}
+	RETURNi_(git_blob_rawsize(blob));
 }
 
 /* ------------------------------------------------------------------------ */

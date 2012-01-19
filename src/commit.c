@@ -64,7 +64,11 @@ DEFAPI(void) defGitCommit(CTX ctx, kclass_t cid, kclassdef_t *cdef)
 //## @Native GitSignature GitCommit.author();
 KMETHOD GitCommit_author(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURN_(new_ReturnRawPtr(ctx, sfp, (git_signature *)git_commit_author(RawPtr_to(git_commit *, sfp[0]))));
+	git_commit *commit = RawPtr_to(git_commit *, sfp[0]);
+	if (commit == NULL) {
+		RETURN_(KNH_NULL);
+	}
+	RETURN_(new_ReturnRawPtr(ctx, sfp, (git_signature *)git_commit_author(commit)));
 }
 
 /* Close an open commit */
@@ -79,7 +83,11 @@ KMETHOD GitCommit_close(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native GitSignature GitCommit.committer();
 KMETHOD GitCommit_committer(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURN_(new_ReturnRawPtr(ctx, sfp, (git_signature *)git_commit_committer(RawPtr_to(git_commit *, sfp[0]))));
+	git_commit *commit = RawPtr_to(git_commit *, sfp[0]);
+	if (commit == NULL) {
+		RETURN_(KNH_NULL);
+	}
+	RETURN_(new_ReturnRawPtr(ctx, sfp, (git_signature *)git_commit_committer(commit)));
 }
 
 /* Create a new commit in the repository using `git_object` instances as
@@ -96,11 +104,19 @@ KMETHOD GitCommit_create(CTX ctx, ksfp_t *sfp _RIX)
 	const char *message = S_totext(sfp[6].s);
 	const git_tree *tree = RawPtr_to(const git_tree *, sfp[7]);
 	kArray *a = sfp[8].a;
-	int parent_count = knh_Array_size(a);
+	int asize = knh_Array_size(a);
+	int parent_count = 0;
 	int i;
-	const git_commit *parents[parent_count];
-	for (i = 0; i < parent_count; i++) {
-		parents[i] = (const git_commit *)a->ptrs[i]->rawptr;
+	const git_commit *parents[asize];
+	for (i = 0; i < asize; i++) {
+		if (a->ptrs[i]->rawptr != NULL) {
+			parents[parent_count] = (const git_commit *)a->ptrs[i]->rawptr;
+			parent_count++;
+		}
+	}
+	if (parent_count == 0) {
+		KNH_FREE(ctx, oid, sizeof(git_oid));
+		RETURN_(KNH_NULL);
 	}
 	int error = git_commit_create(oid, repo, update_ref, author, committer, message_encoding, message, tree, parent_count, parents);
 	if (error < GIT_SUCCESS) {
@@ -112,31 +128,31 @@ KMETHOD GitCommit_create(CTX ctx, ksfp_t *sfp _RIX)
 }
 
 /* Create a new commit in the repository using a variable argument list. */
-//## @Native @Static GitOid GitCommit.createV(GitRepository repo, String update_ref, GitSignature author, GitSignature committer, String message_encoding, String message, GitTree tree, ...);
-KMETHOD GitCommit_createV(CTX ctx, ksfp_t *sfp _RIX)
-{
-	git_oid *oid = (git_oid *)KNH_MALLOC(ctx, sizeof(git_oid));
-	git_repository *repo = RawPtr_to(git_repository *, sfp[1]);
-	const char *update_ref = S_totext(sfp[2].s);
-	const git_signature *author = RawPtr_to(const git_signature *, sfp[3]);
-	const git_signature *committer = RawPtr_to(const git_signature *, sfp[4]);
-	const char *message_encoding = S_totext(sfp[5].s);
-	const char *message = S_totext(sfp[6].s);
-	const git_tree *tree = RawPtr_to(const git_tree *, sfp[7]);
-	size_t parent_count = knh_stack_argc(ctx, sfp);
-	const git_commit *parents[parent_count - 8];
-	int i;
-	for (i = 8; i < parent_count; i++) {
-		parents[i - 8] = RawPtr_to(const git_commit *, sfp[i]);
-	}
-	int error = git_commit_create(oid, repo, update_ref, author, committer, message_encoding, message, tree, parent_count, parents);
-	if (error < GIT_SUCCESS) {
-		TRACE_ERROR(ctx, "git_commit_create", error);
-		KNH_FREE(ctx, oid, sizeof(git_oid));
-		RETURN_(KNH_NULL);
-	}
-	RETURN_(new_ReturnRawPtr(ctx, sfp, oid));
-}
+////## @Native @Static GitOid GitCommit.createV(GitRepository repo, String update_ref, GitSignature author, GitSignature committer, String message_encoding, String message, GitTree tree, ...);
+//KMETHOD GitCommit_createV(CTX ctx, ksfp_t *sfp _RIX)
+//{
+//	git_oid *oid = (git_oid *)KNH_MALLOC(ctx, sizeof(git_oid));
+//	git_repository *repo = RawPtr_to(git_repository *, sfp[1]);
+//	const char *update_ref = S_totext(sfp[2].s);
+//	const git_signature *author = RawPtr_to(const git_signature *, sfp[3]);
+//	const git_signature *committer = RawPtr_to(const git_signature *, sfp[4]);
+//	const char *message_encoding = S_totext(sfp[5].s);
+//	const char *message = S_totext(sfp[6].s);
+//	const git_tree *tree = RawPtr_to(const git_tree *, sfp[7]);
+//	size_t parent_count = knh_stack_argc(ctx, sfp);
+//	const git_commit *parents[parent_count - 8];
+//	int i;
+//	for (i = 8; i < parent_count; i++) {
+//		parents[i - 8] = RawPtr_to(const git_commit *, sfp[i]);
+//	}
+//	int error = git_commit_create(oid, repo, update_ref, author, committer, message_encoding, message, tree, parent_count, parents);
+//	if (error < GIT_SUCCESS) {
+//		TRACE_ERROR(ctx, "git_commit_create", error);
+//		KNH_FREE(ctx, oid, sizeof(git_oid));
+//		RETURN_(KNH_NULL);
+//	}
+//	RETURN_(new_ReturnRawPtr(ctx, sfp, oid));
+//}
 
 /* Get the id of a commit. */
 //## @Native GitOid GitCommit.id();
@@ -181,7 +197,11 @@ KMETHOD GitCommit_lookupPrefix(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native String GitCommit.message();
 KMETHOD GitCommit_message(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURN_(new_String(ctx, git_commit_message(RawPtr_to(git_commit *, sfp[0]))));
+	git_commit *commit = RawPtr_to(git_commit *, sfp[0]);
+	if (commit == NULL) {
+		RETURN_(KNH_TNULL(String));
+	}
+	RETURN_(new_String(ctx, git_commit_message(commit)));
 }
 
 /* Get the encoding for the message of a commit, as a string representing a
@@ -228,14 +248,22 @@ KMETHOD GitCommit_parentOid(CTX ctx, ksfp_t *sfp _RIX)
 //## @Native int GitCommit.parentCount();
 KMETHOD GitCommit_parentCount(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURNi_(git_commit_parentcount(RawPtr_to(git_commit *, sfp[0])));
+	git_commit *commit = RawPtr_to(git_commit *, sfp[0]);
+	if (commit == NULL) {
+		RETURNi_(0);
+	}
+	RETURNi_(git_commit_parentcount(commit));
 }
 
 /* Get the commit time (i.e. committer time) of a commit. */
 //## @Native int GitCommit.time();
 KMETHOD GitCommit_time(CTX ctx, ksfp_t *sfp _RIX)
 {
-	RETURNi_(git_commit_time(RawPtr_to(git_commit *, sfp[0])));
+	git_commit *commit = RawPtr_to(git_commit *, sfp[0]);
+	if (commit == NULL) {
+		RETURNi_(-1);
+	}
+	RETURNi_(git_commit_time(commit));
 }
 
 /* Get the commit timezone offset (i.e. committer's preferred timezone) of a
